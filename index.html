@@ -65,7 +65,7 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
 .product-body { padding:1rem 1.1rem 1.2rem; display:flex; flex-direction:column; gap:.5rem; flex:1; }
 .product-body h3 { font-size:1.15rem; }
 .product-desc { font-size:.87rem; opacity:.7; flex:1; }
-.product-footer { display:flex; align-items:center; justify-content:space-between; margin-top:.3rem; }
+.product-footer { display:flex; align-items:center; justify-content:space-between; margin-top:.3rem; flex-wrap:wrap; gap:.5rem; }
 .price { font-family:var(--font-display); font-style:italic; font-size:1.2rem; color:var(--crust); }
 
 .cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; opacity:0; pointer-events:none; transition:opacity .25s ease; }
@@ -175,7 +175,10 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
       <img id="brandLogo" src="" alt="" style="display:none">
       <span class="brand-name" id="brandName">Mi Pizzería</span>
     </div>
-    <button class="btn btn-flame cart-toggle" id="openCartBtn">Carrito <span class="cart-count" id="cartCount">0</span></button>
+    <div style="display:flex; align-items:center; gap:.7rem">
+      <button class="btn btn-outline btn-sm" id="trackOrderBtn" style="display:none">Mi pedido</button>
+      <button class="btn btn-flame cart-toggle" id="openCartBtn">Carrito <span class="cart-count" id="cartCount">0</span></button>
+    </div>
   </header>
 
   <section class="hero">
@@ -216,10 +219,11 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
 
   <div class="modal-overlay" id="confirmModal" style="display:none">
     <div class="modal-card pizza-frame" style="text-align:center">
-      <h2>¡Pedido recibido!</h2>
+      <h2 id="confirmModalTitle">¡Pedido recibido!</h2>
       <p>Te avisamos aquí mismo cuando cambie el estado de tu pedido.</p>
       <p style="margin-top:1rem"><span class="status-pill" id="confirmStatusPill">pendiente</span></p>
-      <button class="btn btn-flame" id="closeConfirmBtn" style="margin-top:1.4rem">Hacer otro pedido</button>
+      <button class="btn btn-flame" id="closeConfirmBtn" style="margin-top:1.4rem">Cerrar</button>
+      <div style="margin-top:.6rem"><button type="button" class="btn-ghost" id="stopTrackingBtn">Dejar de seguir este pedido</button></div>
     </div>
   </div>
 
@@ -461,11 +465,13 @@ el("openStatsWindow2").addEventListener("click", (e) => { e.preventDefault(); wi
 // =========================================================
 let clienteProducts = [];
 let cart = {};
+let pendingQty = {};
 let activeCategory = "Todas";
-let watchedOrderId = null;
+let watchedOrderId = localStorage.getItem("pizzaLastOrderId") || null;
 let clienteReady = false;
 
 function initCliente() {
+  if (watchedOrderId) { el("trackOrderBtn").style.display = "inline-flex"; }
   if (clienteReady) return;
   clienteReady = true;
   loadClienteSettings();
@@ -483,6 +489,25 @@ function initCliente() {
     .on("postgres_changes", { event:"*", schema:"public", table:"settings" }, loadClienteSettings)
     .subscribe();
 }
+
+async function showOrderStatus(id, isNew) {
+  watchedOrderId = id;
+  localStorage.setItem("pizzaLastOrderId", id);
+  el("trackOrderBtn").style.display = "inline-flex";
+  el("confirmModalTitle").textContent = isNew ? "¡Pedido recibido!" : "Tu pedido";
+  const { data } = await sb.from("orders").select("status").eq("id", id).single();
+  const status = data?.status || "pendiente";
+  el("confirmStatusPill").textContent = status;
+  el("confirmStatusPill").className = `status-pill status-${status}`;
+  el("confirmModal").style.display = "flex";
+}
+el("trackOrderBtn").addEventListener("click", () => showOrderStatus(watchedOrderId, false));
+el("stopTrackingBtn").addEventListener("click", () => {
+  watchedOrderId = null;
+  localStorage.removeItem("pizzaLastOrderId");
+  el("trackOrderBtn").style.display = "none";
+  el("confirmModal").style.display = "none";
+});
 
 async function loadClienteSettings() {
   const { data } = await sb.from("settings").select("*").eq("id", 1).single();
@@ -519,20 +544,43 @@ function renderMenu() {
           <div class="product-photo" style="background-image:url('${p.image_url ? publicImageUrl(p.image_url) : ""}')"></div>
           <div class="product-body">
             <h3>${p.name}</h3><p class="product-desc">${p.description || ""}</p>
-            <div class="product-footer"><span class="price">${formatMoney(p.price)}</span><button class="btn btn-flame btn-sm" data-add="${p.id}">Agregar</button></div>
+            <div class="product-footer">
+              <span class="price">${formatMoney(p.price)}</span>
+              <div style="display:flex; align-items:center; gap:.5rem; flex-wrap:wrap">
+                <div class="qty-control">
+                  <button type="button" data-qty-minus="${p.id}">−</button>
+                  <span data-qty-value="${p.id}">1</span>
+                  <button type="button" data-qty-plus="${p.id}">+</button>
+                </div>
+                <button class="btn btn-flame btn-sm" data-add="${p.id}">Agregar</button>
+              </div>
+            </div>
           </div>
         </div>`).join("")}
     </div>`).join("");
   el("menuContainer").querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => addToCart(btn.dataset.add)));
+  el("menuContainer").querySelectorAll("[data-qty-plus]").forEach(btn => btn.addEventListener("click", () => changePendingQty(btn.dataset.qtyPlus, 1)));
+  el("menuContainer").querySelectorAll("[data-qty-minus]").forEach(btn => btn.addEventListener("click", () => changePendingQty(btn.dataset.qtyMinus, -1)));
+}
+
+function changePendingQty(id, delta) {
+  const next = Math.max(1, (pendingQty[id] || 1) + delta);
+  pendingQty[id] = next;
+  const span = document.querySelector(`[data-qty-value="${id}"]`);
+  if (span) span.textContent = next;
 }
 
 function addToCart(id) {
   const product = clienteProducts.find(p => p.id === id);
   if (!product) return;
+  const qty = pendingQty[id] || 1;
   if (!cart[id]) cart[id] = { product, qty:0 };
-  cart[id].qty += 1;
+  cart[id].qty += qty;
+  pendingQty[id] = 1;
+  const span = document.querySelector(`[data-qty-value="${id}"]`);
+  if (span) span.textContent = "1";
   renderCart();
-  showToast(`${product.name} agregada`);
+  showToast(qty > 1 ? `${qty} × ${product.name} agregadas` : `${product.name} agregada`);
 }
 function changeQty(id, delta) { if (!cart[id]) return; cart[id].qty += delta; if (cart[id].qty <= 0) delete cart[id]; renderCart(); }
 function cartTotal() { return Object.values(cart).reduce((sum,l) => sum + l.qty * Number(l.product.price), 0); }
@@ -568,13 +616,12 @@ el("checkoutForm").addEventListener("submit", async (e) => {
     items, total: cartTotal(), status: "pendiente"
   }).select().single();
   submitBtn.disabled = false; submitBtn.textContent = "Enviar pedido";
-  if (error) { showToast("No se pudo enviar el pedido"); return; }
-  watchedOrderId = data.id; cart = {}; renderCart();
+  if (error) { showToast("No se pudo enviar el pedido: " + error.message); return; }
+  cart = {}; renderCart();
   el("checkoutForm").reset(); el("checkoutModal").style.display = "none";
-  el("confirmStatusPill").textContent = "pendiente"; el("confirmStatusPill").className = "status-pill status-pendiente";
-  el("confirmModal").style.display = "flex";
+  showOrderStatus(data.id, true);
 });
-el("closeConfirmBtn").addEventListener("click", () => { el("confirmModal").style.display = "none"; watchedOrderId = null; });
+el("closeConfirmBtn").addEventListener("click", () => { el("confirmModal").style.display = "none"; });
 
 // =========================================================
 // VISTA ADMIN — MENÚ
