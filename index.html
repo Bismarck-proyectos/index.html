@@ -170,6 +170,12 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
 
 <!-- =================== VISTA CLIENTE (#/) =================== -->
 <div class="view" id="view-cliente">
+  <div class="modal-overlay" id="siteInactiveOverlay" style="display:none; z-index:90; background:var(--charcoal)">
+    <div class="modal-card pizza-frame" style="text-align:center">
+      <h2>Estamos cerrados por ahora</h2>
+      <p>Volvé a intentarlo más tarde.</p>
+    </div>
+  </div>
   <header class="site-header">
     <div class="brand">
       <img id="brandLogo" src="" alt="" style="display:none">
@@ -235,7 +241,7 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
   <div class="login-screen">
     <div class="login-card pizza-frame">
       <h2>Panel de administración</h2>
-      <p style="opacity:.7; font-size:.9rem; margin-bottom:1.4rem">Ingresá con el usuario administrador creado en Supabase.</p>
+      <p style="opacity:.7; font-size:.9rem; margin-bottom:1.4rem">Ingresá con tu usuario y contraseña de administrador.</p>
       <form id="loginForm">
         <div class="field"><label for="loginEmail">Usuario</label><input id="loginEmail" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required></div>
         <div class="field"><label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" required></div>
@@ -243,6 +249,48 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
         <button class="btn btn-flame" style="width:100%" type="submit">Entrar</button>
       </form>
       <p style="margin-top:1.2rem"><a href="#/" class="btn-ghost">← Volver al menú</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- =================== LOGIN MAESTRO — ruta escondida #/maestro, sin ningún enlace visible =================== -->
+<div class="view" id="view-masterLogin">
+  <div class="login-screen">
+    <div class="login-card pizza-frame">
+      <h2>Acceso maestro</h2>
+      <form id="masterLoginForm">
+        <div class="field"><label for="masterLoginUser">Usuario</label><input id="masterLoginUser" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required></div>
+        <div class="field"><label for="masterLoginPass">Contraseña</label><input id="masterLoginPass" type="password" required></div>
+        <p id="masterLoginError" style="color:#7A2A20; font-size:.85rem; display:none">Usuario o contraseña incorrectos.</p>
+        <button class="btn btn-flame" style="width:100%" type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================== PANEL MAESTRO (#/maestro, con sesión) =================== -->
+<div class="view" id="view-master">
+  <div class="login-screen">
+    <div class="login-card pizza-frame" style="width:min(460px,92vw)">
+      <h2>Panel maestro</h2>
+      <p style="opacity:.7; font-size:.9rem">Esto controla si el sitio está disponible para el dueño y los clientes.</p>
+
+      <div style="background:var(--charcoal); border-radius:var(--radius); padding:1rem; margin:1.2rem 0">
+        <p style="margin:0 0 .6rem">Estado actual: <span class="status-pill" id="masterSiteStatusPill">activo</span></p>
+        <button type="button" class="btn btn-danger btn-sm" id="deactivateSiteBtn">Desactivar sitio</button>
+        <button type="button" class="btn btn-flame btn-sm" id="activateSiteBtn" style="display:none">Activar sitio</button>
+      </div>
+
+      <details style="text-align:left; margin-top:1rem">
+        <summary style="cursor:pointer; font-weight:600">Cambiar usuario/contraseña maestra</summary>
+        <form id="masterChangeForm" style="margin-top:1rem">
+          <div class="field"><label for="masterNewUser">Nuevo usuario</label><input id="masterNewUser" required></div>
+          <div class="field"><label for="masterNewPass">Nueva contraseña</label><input id="masterNewPass" type="password" required minlength="6"></div>
+          <button class="btn btn-outline btn-sm" type="submit">Guardar</button>
+        </form>
+      </details>
+
+      <p style="margin-top:1.4rem"><button type="button" class="btn-ghost" id="masterLogoutBtn">Cerrar sesión maestra</button></p>
     </div>
   </div>
 </div>
@@ -273,6 +321,18 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
             </div>
           </div>
           <button class="btn btn-flame" type="submit">Guardar</button>
+        </form>
+      </section>
+
+      <section style="margin-bottom:2.6rem; background:var(--cream-2); border-radius:var(--radius); padding:1.4rem 1.6rem">
+        <h2 style="font-size:1.1rem">Seguridad</h2>
+        <p style="font-size:.85rem; opacity:.7; margin-top:-.4rem">Cambiá tu usuario y contraseña de acceso al panel.</p>
+        <form id="changePasswordForm" style="display:flex; gap:1.2rem; flex-wrap:wrap; align-items:flex-end; margin-top:1rem">
+          <div class="field"><label for="cpOldUser">Usuario actual</label><input id="cpOldUser" required></div>
+          <div class="field"><label for="cpOldPass">Contraseña actual</label><input id="cpOldPass" type="password" required></div>
+          <div class="field"><label for="cpNewUser">Nuevo usuario</label><input id="cpNewUser" required></div>
+          <div class="field"><label for="cpNewPass">Nueva contraseña</label><input id="cpNewPass" type="password" required minlength="6"></div>
+          <button class="btn btn-flame" type="submit">Cambiar</button>
         </form>
       </section>
 
@@ -385,9 +445,10 @@ const BUCKET = "imagenes";
 
 // Usuario y contraseña del panel de administración — están acá mismo,
 // no hace falta crear ningún usuario en Supabase.
-const ADMIN_USER = "pizza2026";
-const ADMIN_PASS = "12345678";
+// El usuario/contraseña ya NO están escritos acá — viven encriptados en
+// Supabase y se verifican con la función verify_login (ver credenciales.sql).
 let isAdminAuthed = sessionStorage.getItem("pizzaAdminAuthed") === "1";
+let isMasterAuthed = sessionStorage.getItem("pizzaMasterAuthed") === "1";
 
 function publicImageUrl(path) {
   if (!path) return "";
@@ -422,6 +483,11 @@ function router() {
   const route = (location.hash || "#/").slice(1).replace(/^\//, "") || "";
   if (route === "" || route === "/") { showView("cliente"); initCliente(); return; }
 
+  if (route === "maestro") {
+    if (!isMasterAuthed) { showView("masterLogin"); return; }
+    showView("master"); initMaster(); return;
+  }
+
   if (!isAdminAuthed) { pendingRoute = route; showView("login"); return; }
 
   if (route === "admin") { showView("admin"); initAdmin(); }
@@ -431,11 +497,16 @@ function router() {
 }
 window.addEventListener("hashchange", router);
 
-el("loginForm").addEventListener("submit", (e) => {
+el("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const user = el("loginEmail").value.trim().toLowerCase();
+  const btn = el("loginForm").querySelector("button[type=submit]");
+  btn.disabled = true;
+  const user = el("loginEmail").value.trim();
   const pass = el("loginPassword").value.trim();
-  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+  const { data: ok, error } = await sb.rpc("verify_login", { p_role: "admin", p_username: user, p_password: pass });
+  btn.disabled = false;
+  if (error) { showToast("Error al verificar: " + error.message); return; }
+  if (ok) {
     isAdminAuthed = true;
     sessionStorage.setItem("pizzaAdminAuthed", "1");
     el("loginError").style.display = "none";
@@ -459,6 +530,82 @@ el("openOrdersWindow").addEventListener("click", (e) => { e.preventDefault(); wi
 el("openOrdersWindow2").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/pedidos", "_blank"); });
 el("openStatsWindow").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/estadisticas", "_blank"); });
 el("openStatsWindow2").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/estadisticas", "_blank"); });
+
+// =========================================================
+// PANEL MAESTRO — ruta escondida #/maestro, credenciales separadas
+// del admin normal. Sirve para activar/desactivar el sitio y para
+// cambiar la propia clave maestra (nadie más la puede tocar).
+// =========================================================
+el("masterLoginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = el("masterLoginUser").value.trim();
+  const pass = el("masterLoginPass").value;
+  const { data: ok, error } = await sb.rpc("verify_login", { p_role: "master", p_username: user, p_password: pass });
+  if (error) { showToast("Error: " + error.message); return; }
+  if (ok) {
+    isMasterAuthed = true;
+    sessionStorage.setItem("pizzaMasterAuthed", "1");
+    el("masterLoginError").style.display = "none";
+    router();
+  } else {
+    el("masterLoginError").style.display = "block";
+  }
+});
+
+el("masterLogoutBtn").addEventListener("click", () => {
+  isMasterAuthed = false;
+  sessionStorage.removeItem("pizzaMasterAuthed");
+  location.hash = "#/";
+});
+
+let masterReady = false;
+function initMaster() {
+  loadMasterStatus();
+  if (masterReady) return;
+  masterReady = true;
+  sb.channel("master-settings").on("postgres_changes", { event:"UPDATE", schema:"public", table:"settings" }, loadMasterStatus).subscribe();
+}
+
+async function loadMasterStatus() {
+  const { data } = await sb.from("settings").select("site_active").eq("id", 1).single();
+  const active = data?.site_active !== false;
+  el("masterSiteStatusPill").textContent = active ? "activo" : "inactivo";
+  el("masterSiteStatusPill").className = "status-pill " + (active ? "status-listo" : "status-cancelado");
+  el("deactivateSiteBtn").style.display = active ? "inline-flex" : "none";
+  el("activateSiteBtn").style.display = active ? "none" : "inline-flex";
+}
+
+async function toggleSiteActive(active) {
+  const masterUser = el("masterLoginUser").value.trim();
+  const masterPass = el("masterLoginPass").value;
+  // Si ya se cerró el formulario de login (sesión ya iniciada en este navegador),
+  // le volvemos a pedir la contraseña maestra acá mismo para confirmar la acción.
+  const confirmUser = masterUser || prompt("Confirmá tu usuario maestro:");
+  const confirmPass = masterPass || prompt("Confirmá tu contraseña maestra:");
+  if (!confirmUser || !confirmPass) return;
+  const { data: ok, error } = await sb.rpc("set_site_active", { p_username: confirmUser, p_password: confirmPass, p_active: active });
+  if (error) { showToast("Error: " + error.message); return; }
+  if (!ok) { showToast("Contraseña maestra incorrecta"); return; }
+  showToast(active ? "Sitio activado" : "Sitio desactivado");
+  loadMasterStatus();
+}
+el("deactivateSiteBtn").addEventListener("click", () => toggleSiteActive(false));
+el("activateSiteBtn").addEventListener("click", () => toggleSiteActive(true));
+
+el("masterChangeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const oldUser = el("masterLoginUser").value.trim() || prompt("Tu usuario maestro actual:");
+  const oldPass = el("masterLoginPass").value || prompt("Tu contraseña maestra actual:");
+  if (!oldUser || !oldPass) return;
+  const { data: ok, error } = await sb.rpc("change_credentials", {
+    p_role: "master", p_old_username: oldUser, p_old_password: oldPass,
+    p_new_username: el("masterNewUser").value.trim(), p_new_password: el("masterNewPass").value
+  });
+  if (error) { showToast("Error: " + error.message); return; }
+  if (!ok) { showToast("Usuario o contraseña actual incorrectos"); return; }
+  showToast("Clave maestra actualizada");
+  el("masterChangeForm").reset();
+});
 
 // =========================================================
 // VISTA CLIENTE
@@ -515,6 +662,7 @@ async function loadClienteSettings() {
   el("brandName").textContent = data.restaurant_name || "Mi Pizzería";
   document.title = data.restaurant_name || "Pizzería";
   if (data.logo_url) { el("brandLogo").src = publicImageUrl(data.logo_url); el("brandLogo").style.display = "block"; }
+  el("siteInactiveOverlay").style.display = data.site_active === false ? "flex" : "none";
 }
 
 async function loadClienteProducts() {
@@ -662,6 +810,21 @@ el("settingsForm").addEventListener("submit", async (e) => {
   showToast(error ? "No se pudo guardar" : "Datos guardados");
 });
 el("pickLogoBtn").addEventListener("click", () => openMedia("logo"));
+
+el("changePasswordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { data: ok, error } = await sb.rpc("change_credentials", {
+    p_role: "admin",
+    p_old_username: el("cpOldUser").value.trim(),
+    p_old_password: el("cpOldPass").value,
+    p_new_username: el("cpNewUser").value.trim(),
+    p_new_password: el("cpNewPass").value
+  });
+  if (error) { showToast("Error: " + error.message); return; }
+  if (!ok) { showToast("Usuario o contraseña actual incorrectos"); return; }
+  showToast("Listo, usá los nuevos datos la próxima vez que entres");
+  el("changePasswordForm").reset();
+});
 
 async function loadAdminProducts() {
   const { data, error } = await sb.from("products").select("*").order("sort_order").order("created_at");
