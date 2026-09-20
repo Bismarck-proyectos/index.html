@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizzería</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --charcoal: #000000; --charcoal-2: #1A1A1A;
+  --cream: #181818; --cream-2: #232323;
+  --flame: #E50914; --flame-dark: #B10710; --crust: #E3A23C; --basil: #445535;
+  --ink: #F3F1EC; --muted: rgba(243,241,236,.62); --line: rgba(255,255,255,0.14); --radius: 6px;
+  --font-display: 'Fraunces', serif; --font-body: 'Work Sans', sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; color-scheme: dark; }
+body { margin:0; font-family: var(--font-body); color: var(--ink); background: var(--charcoal); line-height:1.5; }
+img { max-width:100%; display:block; }
+button { font-family: inherit; cursor:pointer; }
+a { color: inherit; }
+h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
+.view { display:none; }
+.view.is-active { display:block; animation: viewFadeIn .45s cubic-bezier(.2,.8,.2,1); }
+@keyframes viewFadeIn { from { opacity:0; transform:translateY(14px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:.5em; padding:.8em 1.4em; border-radius:var(--radius); border:1px solid transparent; font-weight:600; font-size:.95rem; transition:transform .15s ease, background .15s ease, box-shadow .15s ease; }
+.btn:active { transform: scale(.97); }
+.btn-flame { background: var(--flame); color: #fff; }
+.btn-flame:hover { background: var(--flame-dark); box-shadow: 0 6px 18px rgba(229,9,20,.4); }
+.btn-outline { background:transparent; border-color:var(--ink); color:var(--ink); }
+.btn-outline:hover { background:var(--ink); color:var(--charcoal); }
+.btn-ghost { background:transparent; border:none; color:var(--ink); text-decoration:underline; padding:.3em; }
+.btn-danger { background:#6B1210; color:#fff; }
+.btn-sm { padding:.5em .9em; font-size:.82rem; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+
+.site-header { position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between; padding:1rem 5vw; background:var(--cream); border-bottom:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:.7rem; }
+.brand img { height:40px; width:40px; object-fit:cover; border-radius:50%; }
+.brand-name { font-family:var(--font-display); font-size:1.3rem; font-weight:600; }
+.cart-toggle { position:relative; }
+.cart-count { position:absolute; top:-8px; right:-8px; background:var(--flame); color:#fff; font-size:.7rem; font-weight:700; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+
+.hero { background: radial-gradient(120% 140% at 100% 100%, rgba(229,9,20,.22) 0%, transparent 55%), #000; color:var(--ink); padding:6rem 5vw 5rem; position:relative; overflow:hidden; }
+.hero-eyebrow { color:var(--crust); font-family:var(--font-display); font-style:italic; font-size:1.1rem; }
+.hero h1 { font-size:clamp(2.6rem,6vw,4.8rem); line-height:1.02; max-width:14ch; }
+.hero p { max-width:46ch; opacity:.82; font-size:1.05rem; }
+.hero-flame-shape { position:absolute; right:-6vw; bottom:-10vh; width:46vw; height:46vw; max-width:520px; max-height:520px; background:radial-gradient(circle at 35% 30%, var(--flame) 0%, var(--flame-dark) 55%, transparent 72%); border-radius:42% 58% 60% 40% / 45% 40% 60% 55%; opacity:.5; filter:blur(1px); animation: flameGlow 5s ease-in-out infinite; }
+@keyframes flameGlow { 0%,100% { opacity:.4; transform:scale(1); } 50% { opacity:.6; transform:scale(1.05); } }
+
+.category-bar { display:flex; gap:.6rem; padding:1.4rem 5vw; overflow-x:auto; background:var(--cream); border-bottom:1px solid var(--line); }
+.category-pill { border:1px solid var(--line); background:transparent; color:var(--ink); padding:.5em 1.1em; border-radius:999px; font-size:.88rem; font-weight:600; white-space:nowrap; transition:background .15s ease, border-color .15s ease; }
+.category-pill.is-active { background:var(--flame); color:#fff; border-color:var(--flame); }
+
+.menu-section { padding:3.5rem 5vw 5rem; }
+.menu-section h2 { font-size:1.9rem; margin-bottom:1.6rem; }
+.product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1.6rem; }
+.product-card { background:var(--cream); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.product-card:hover { transform:scale(1.035); box-shadow:0 18px 40px rgba(0,0,0,.55); border-color:var(--flame); z-index:2; position:relative; }
+.product-photo { aspect-ratio:4/3; background:var(--cream-2) center/cover no-repeat; }
+.product-body { padding:1rem 1.1rem 1.2rem; display:flex; flex-direction:column; gap:.5rem; flex:1; }
+.product-body h3 { font-size:1.15rem; }
+.product-desc { font-size:.87rem; opacity:.7; flex:1; }
+.product-footer { display:flex; align-items:center; justify-content:space-between; margin-top:.3rem; flex-wrap:wrap; gap:.5rem; }
+.price { font-family:var(--font-display); font-style:italic; font-size:1.2rem; color:var(--crust); }
+
+.cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+.cart-overlay.is-open { opacity:1; pointer-events:auto; }
+.cart-drawer { position:fixed; top:0; right:0; height:100%; width:min(420px,92vw); background:var(--cream); z-index:61; transform:translateX(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1); display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(0,0,0,.6); }
+.cart-drawer.is-open { transform:translateX(0); }
+.cart-header { padding:1.2rem 1.4rem; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+.cart-items { flex:1; overflow-y:auto; padding:1rem 1.4rem; }
+.cart-line { display:flex; gap:.8rem; align-items:center; padding:.7rem 0; border-bottom:1px solid var(--line); }
+.cart-line-name { flex:1; font-weight:600; font-size:.92rem; }
+.qty-control { display:flex; align-items:center; gap:.5rem; }
+.qty-control button { width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:none; color:var(--ink); }
+.cart-footer { padding:1.2rem 1.4rem; border-top:1px solid var(--line); }
+.cart-total { display:flex; justify-content:space-between; font-family:var(--font-display); font-size:1.3rem; margin-bottom:1rem; }
+
+.field { margin-bottom:1rem; }
+.field label { display:block; font-size:.85rem; font-weight:600; margin-bottom:.35rem; }
+.field input, .field textarea, .field select { width:100%; padding:.7em .8em; border:1px solid var(--line); border-radius:var(--radius); font-family:inherit; font-size:.95rem; background:var(--cream-2); color:var(--ink); }
+.field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+.field textarea { resize:vertical; min-height:70px; }
+
+.admin-shell { display:flex; min-height:100vh; }
+.admin-nav { width:230px; background:#000; color:var(--ink); padding:1.6rem 1.2rem; display:flex; flex-direction:column; gap:.3rem; flex-shrink:0; border-right:1px solid var(--line); }
+.admin-nav .brand-name { font-size:1.1rem; margin-bottom:1.2rem; color:var(--ink); }
+.admin-nav a, .admin-nav button.navlink { display:block; text-align:left; padding:.6em .7em; border-radius:var(--radius); text-decoration:none; color:var(--ink); opacity:.75; background:none; border:none; font-size:.93rem; font-family:inherit; cursor:pointer; transition:background .15s ease, opacity .15s ease; }
+.admin-nav a.is-active, .admin-nav a:hover, .admin-nav button.navlink:hover { opacity:1; background:rgba(229,9,20,.16); }
+
+.admin-main { flex:1; padding:2.4rem 3vw; max-width:1100px; }
+.admin-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
+
+.login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(80% 80% at 50% 20%, rgba(229,9,20,.18) 0%, transparent 60%), #000; }
+.login-card.pizza-frame, .modal-card.pizza-frame {
+  border:10px solid transparent; border-radius:22px;
+  background:
+    linear-gradient(var(--cream), var(--cream)) padding-box,
+    repeating-conic-gradient(from 0deg, var(--crust) 0deg 14deg, var(--flame) 14deg 28deg) border-box;
+  animation: pizzaSpin 14s linear infinite, modalPop .3s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes pizzaSpin { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+.login-card { padding:2.6rem 2.4rem; width:min(380px,90vw); }
+
+.data-table { width:100%; border-collapse:collapse; font-size:.9rem; }
+.data-table th { text-align:left; font-size:.78rem; color:var(--muted); padding:.5em .6em; border-bottom:1px solid var(--line); }
+.data-table td { padding:.6em .6em; border-bottom:1px solid var(--line); vertical-align:middle; }
+.thumb { width:46px; height:46px; object-fit:cover; border-radius:var(--radius); background:var(--cream-2); }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; z-index:80; padding:1rem; animation: overlayFade .2s ease; }
+@keyframes overlayFade { from { opacity:0; } to { opacity:1; } }
+.modal-card { background:var(--cream); border-radius:var(--radius); padding:1.8rem; width:min(560px,96vw); max-height:88vh; overflow-y:auto; animation: modalPop .28s cubic-bezier(.2,.8,.2,1); }
+@keyframes modalPop { from { opacity:0; transform:scale(.92) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+.media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:.6rem; margin:1rem 0; }
+.media-grid img { aspect-ratio:1; object-fit:cover; border-radius:var(--radius); border:2px solid transparent; cursor:pointer; transition:transform .15s ease, border-color .15s ease; }
+.media-grid img:hover { transform:scale(1.06); }
+.media-grid img.is-selected { border-color:var(--flame); }
+
+.status-pill { padding:.25em .7em; border-radius:999px; font-size:.75rem; font-weight:700; border:1px solid transparent; }
+.status-pendiente { background:rgba(227,162,60,.16); color:var(--crust); border-color:rgba(227,162,60,.4); }
+.status-preparando { background:rgba(229,9,20,.16); color:#ff7a7a; border-color:rgba(229,9,20,.4); }
+.status-listo { background:rgba(90,200,130,.16); color:#7CE38B; border-color:rgba(90,200,130,.4); }
+.status-entregado { background:rgba(255,255,255,.1); color:var(--muted); border-color:var(--line); }
+.status-cancelado { background:rgba(229,9,20,.28); color:#ffb3b3; border-color:rgba(229,9,20,.55); }
+
+.kanban { display:grid; grid-template-columns:repeat(4,minmax(240px,1fr)); gap:1rem; overflow-x:auto; }
+.kanban-col { background:var(--cream-2); border-radius:var(--radius); padding:.9rem; min-height:300px; }
+.kanban-col h3 { font-size:.95rem; margin-bottom:.8rem; }
+.order-card { background:var(--cream); border:1px solid var(--line); border-radius:var(--radius); padding:.8rem; margin-bottom:.7rem; font-size:.85rem; transition:transform .2s ease; }
+.order-card:hover { transform:translateY(-2px); }
+.order-card.is-new { animation:pulse-in .9s ease; }
+@keyframes pulse-in { 0% { box-shadow:0 0 0 0 rgba(229,9,20,.6);} 100% { box-shadow:0 0 0 14px rgba(229,9,20,0);} }
+.order-items-list { margin:.4rem 0; padding-left:1.1rem; font-size:.82rem; opacity:.8; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:2rem; }
+.stat-card { background:var(--cream-2); border-radius:var(--radius); padding:1.2rem 1.3rem; border:1px solid var(--line); }
+.stat-card .value { font-family:var(--font-display); font-size:2rem; color:var(--crust); }
+.stat-card .label { font-size:.82rem; opacity:.65; }
+.chart-card { background:var(--cream-2); border-radius:var(--radius); padding:1.4rem; margin-bottom:1.6rem; border:1px solid var(--line); }
+.chart-card h3 { font-size:1rem; margin-bottom:1rem; }
+
+.empty-state { text-align:center; padding:3rem 1rem; opacity:.55; font-size:.9rem; }
+.toast { position:fixed; bottom:1.4rem; left:50%; transform:translateX(-50%); background:#000; color:var(--ink); border:1px solid var(--line); padding:.8em 1.3em; border-radius:var(--radius); font-size:.88rem; z-index:100; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; }
+.toast.is-visible { opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+.admin-lock-btn {
+  position:fixed; bottom:1.3rem; right:1.3rem; z-index:30;
+  width:44px; height:44px; border-radius:50%;
+  background:var(--cream-2); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.15rem; text-decoration:none; line-height:1;
+  opacity:.5; transition:opacity .2s ease, transform .2s ease;
+}
+.admin-lock-btn:hover { opacity:1; transform:scale(1.1); }
+
+@media (max-width:780px) {
+  .admin-shell { flex-direction:column; }
+  .admin-nav { width:100%; flex-direction:row; overflow-x:auto; }
+  .kanban { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- =================== VISTA CLIENTE (#/) =================== -->
+<div class="view" id="view-cliente">
+  <div class="modal-overlay" id="siteInactiveOverlay" style="display:none; z-index:90; background:var(--charcoal)">
+    <div class="modal-card pizza-frame" style="text-align:center">
+      <h2>Estamos cerrados por ahora</h2>
+      <p>Volvé a intentarlo más tarde.</p>
+    </div>
+  </div>
+  <header class="site-header">
+    <div class="brand">
+      <img id="brandLogo" src="" alt="" style="display:none">
+      <span class="brand-name" id="brandName">Mi Pizzería</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:.7rem">
+      <button class="btn btn-outline btn-sm" id="trackOrderBtn" style="display:none">Mi pedido</button>
+      <button class="btn btn-flame cart-toggle" id="openCartBtn">Carrito <span class="cart-count" id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-flame-shape"></div>
+    <p class="hero-eyebrow">Horno de leña, todos los días</p>
+    <h1>Pizza recién horneada, directo a tu mesa</h1>
+    <p>Elegí tus favoritas del menú y hacé el pedido en un par de clics. Vos armás el pedido, nosotros prendemos el horno.</p>
+  </section>
+
+  <nav class="category-bar" id="categoryBar"></nav>
+  <main class="menu-section"><div id="menuContainer"></div></main>
+
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-header"><h2 style="margin:0;font-size:1.2rem">Tu pedido</h2><button class="btn-ghost" id="closeCartBtn">Cerrar</button></div>
+    <div class="cart-items" id="cartItems"><p class="empty-state">Todavía no agregaste nada del menú.</p></div>
+    <div class="cart-footer">
+      <div class="cart-total"><span>Total</span><span id="cartTotal">₡0</span></div>
+      <button class="btn btn-flame" id="goCheckoutBtn" style="width:100%" disabled>Continuar</button>
+    </div>
+  </aside>
+
+  <div class="modal-overlay" id="checkoutModal" style="display:none">
+    <div class="modal-card pizza-frame">
+      <h2>Datos para tu pedido</h2>
+      <form id="checkoutForm">
+        <div class="field"><label for="custName">Nombre</label><input id="custName" required></div>
+        <div class="field"><label for="custPhone">Teléfono</label><input id="custPhone" required></div>
+        <div class="field"><label for="custAddress">Dirección de entrega</label><textarea id="custAddress" placeholder="Dejalo en blanco si vas a recoger en el local"></textarea></div>
+        <div class="field"><label for="custNotes">Notas para el pedido (opcional)</label><textarea id="custNotes"></textarea></div>
+        <div style="display:flex; gap:.8rem; margin-top:1.2rem">
+          <button type="button" class="btn btn-outline" id="cancelCheckoutBtn">Volver</button>
+          <button type="submit" class="btn btn-flame" style="flex:1" id="submitOrderBtn">Enviar pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal" style="display:none">
+    <div class="modal-card pizza-frame" style="text-align:center">
+      <h2 id="confirmModalTitle">¡Pedido recibido!</h2>
+      <p>Te avisamos aquí mismo cuando cambie el estado de tu pedido.</p>
+      <p style="margin-top:1rem"><span class="status-pill" id="confirmStatusPill">pendiente</span></p>
+      <button class="btn btn-flame" id="closeConfirmBtn" style="margin-top:1.4rem">Cerrar</button>
+      <div style="margin-top:.6rem"><button type="button" class="btn-ghost" id="stopTrackingBtn">Dejar de seguir este pedido</button></div>
+    </div>
+  </div>
+
+  <a href="#/admin" class="admin-lock-btn" title="Administración" aria-label="Administración">🔒</a>
+</div>
+
+<!-- =================== VISTA LOGIN (#/admin, #/pedidos, #/estadisticas sin sesión) =================== -->
+<div class="view" id="view-login">
+  <div class="login-screen">
+    <div class="login-card pizza-frame">
+      <h2>Panel de administración</h2>
+      <p style="opacity:.7; font-size:.9rem; margin-bottom:1.4rem">Ingresá con tu usuario y contraseña de administrador.</p>
+      <form id="loginForm">
+        <div class="field"><label for="loginEmail">Usuario</label><input id="loginEmail" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required></div>
+        <div class="field"><label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" required></div>
+        <p id="loginError" style="color:#7A2A20; font-size:.85rem; display:none">Usuario o contraseña incorrectos.</p>
+        <button class="btn btn-flame" style="width:100%" type="submit">Entrar</button>
+      </form>
+      <p style="margin-top:1.2rem"><a href="#/" class="btn-ghost">← Volver al menú</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- =================== LOGIN MAESTRO — ruta escondida #/maestro, sin ningún enlace visible =================== -->
+<div class="view" id="view-masterLogin">
+  <div class="login-screen">
+    <div class="login-card pizza-frame">
+      <h2>Acceso maestro</h2>
+      <form id="masterLoginForm">
+        <div class="field"><label for="masterLoginPass">Contraseña</label><input id="masterLoginPass" type="password" required></div>
+        <p id="masterLoginError" style="color:#7A2A20; font-size:.85rem; display:none">Contraseña incorrecta.</p>
+        <button class="btn btn-flame" style="width:100%" type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================== PANEL MAESTRO (#/maestro, con sesión) =================== -->
+<div class="view" id="view-master">
+  <div class="login-screen">
+    <div class="login-card pizza-frame" style="width:min(460px,92vw)">
+      <h2>Panel maestro</h2>
+      <p style="opacity:.7; font-size:.9rem">Esto controla si el sitio está disponible para el dueño y los clientes.</p>
+
+      <div style="background:var(--charcoal); border-radius:var(--radius); padding:1rem; margin:1.2rem 0">
+        <p style="margin:0 0 .6rem">Estado actual: <span class="status-pill" id="masterSiteStatusPill">activo</span></p>
+        <button type="button" class="btn btn-danger btn-sm" id="deactivateSiteBtn">Desactivar sitio</button>
+        <button type="button" class="btn btn-flame btn-sm" id="activateSiteBtn" style="display:none">Activar sitio</button>
+      </div>
+
+      <div style="background:var(--charcoal); border-radius:var(--radius); padding:1rem; margin:1.2rem 0; text-align:left">
+        <p style="margin:0 0 .6rem; font-weight:600">Uso del sitio (histórico)</p>
+        <p style="margin:.2rem 0">Pedidos totales: <strong id="masterTotalOrders">0</strong></p>
+        <p style="margin:.2rem 0">Clientes distintos: <strong id="masterTotalClients">0</strong></p>
+        <p style="margin:.2rem 0">Ingresos totales: <strong id="masterTotalRevenue">₡0</strong></p>
+        <div style="display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.8rem">
+          <button type="button" class="btn btn-outline btn-sm" id="downloadOrdersBtnMaster">⬇️ Descargar reporte (PDF)</button>
+          <button type="button" class="btn btn-danger btn-sm" id="clearOrdersBtnMaster">🗑️ Vaciar pedidos (mes nuevo)</button>
+        </div>
+      </div>
+
+      <p style="font-size:.8rem; opacity:.6; margin-top:1rem">Usuario y contraseña maestra fijos en el código. Para cambiarlos, pedí un index.html nuevo.</p>
+
+      <p style="margin-top:1.4rem"><button type="button" class="btn-ghost" id="masterLogoutBtn">Cerrar sesión maestra</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- =================== VISTA ADMIN — MENÚ (#/admin) =================== -->
+<div class="view" id="view-admin">
+  <div class="admin-shell">
+    <nav class="admin-nav">
+      <div class="brand-name">Panel admin</div>
+      <a href="#/admin" class="admin-navlink" data-route="admin">Menú</a>
+      <a href="#" id="openOrdersWindow">Pedidos ↗</a>
+      <a href="#" id="openStatsWindow">Estadísticas ↗</a>
+      <button class="navlink" id="logoutBtnAdmin" style="margin-top:1.4rem">Cerrar sesión</button>
+    </nav>
+    <main class="admin-main">
+      <div id="configWarning" style="display:none; background:#B20714; color:#fff; padding:1rem 1.3rem; border-radius:var(--radius); margin-bottom:1.6rem; font-size:.9rem"></div>
+      <div class="admin-topbar"><h1 style="margin:0">Menú</h1><button class="btn btn-flame" id="newProductBtn">+ Nuevo producto</button></div>
+
+      <section style="margin-bottom:2.6rem; background:var(--cream-2); border-radius:var(--radius); padding:1.4rem 1.6rem">
+        <h2 style="font-size:1.1rem">Datos del restaurante</h2>
+        <form id="settingsForm" style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-end; margin-top:1rem">
+          <div class="field" style="flex:1; min-width:220px"><label for="restaurantName">Nombre del restaurante</label><input id="restaurantName" required></div>
+          <div class="field"><label>Logo</label>
+            <div style="display:flex; align-items:center; gap:.8rem">
+              <img id="logoPreview" class="thumb" style="width:56px;height:56px">
+              <button type="button" class="btn btn-outline btn-sm" id="pickLogoBtn">Elegir del almacenamiento</button>
+            </div>
+          </div>
+          <button class="btn btn-flame" type="submit">Guardar</button>
+        </form>
+      </section>
+
+      <section style="margin-bottom:2.6rem; background:var(--cream-2); border-radius:var(--radius); padding:1.4rem 1.6rem">
+        <h2 style="font-size:1.1rem">Historial de pedidos</h2>
+        <p style="font-size:.85rem; opacity:.7; margin-top:-.4rem">Descargá el detalle de todas las compras hechas, o vaciá los pedidos para empezar un mes limpio.</p>
+        <div style="display:flex; gap:.8rem; flex-wrap:wrap; margin-top:1rem">
+          <button type="button" class="btn btn-outline btn-sm" id="downloadOrdersBtnAdmin">⬇️ Descargar reporte (PDF)</button>
+          <button type="button" class="btn btn-danger btn-sm" id="clearOrdersBtnAdmin">🗑️ Vaciar pedidos (mes nuevo)</button>
+        </div>
+      </section>
+
+      <table class="data-table">
+        <thead><tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Activo</th><th></th></tr></thead>
+        <tbody id="productsTbody"></tbody>
+      </table>
+    </main>
+  </div>
+</div>
+
+<!-- =================== VISTA PEDIDOS (#/pedidos) =================== -->
+<div class="view" id="view-pedidos">
+  <div class="admin-shell">
+    <nav class="admin-nav">
+      <div class="brand-name">Panel admin</div>
+      <a href="#/admin">Menú</a>
+      <a class="is-active">Pedidos</a>
+      <a href="#" id="openStatsWindow2">Estadísticas ↗</a>
+      <button class="navlink" id="logoutBtnPedidos" style="margin-top:1.4rem">Cerrar sesión</button>
+    </nav>
+    <main class="admin-main" style="max-width:none">
+      <div class="admin-topbar"><h1 style="margin:0">Pedidos en vivo</h1><span style="font-size:.85rem; opacity:.65" id="lastUpdate"></span></div>
+      <div class="kanban" id="kanban"></div>
+    </main>
+  </div>
+</div>
+
+<!-- =================== VISTA ESTADÍSTICAS (#/estadisticas) =================== -->
+<div class="view" id="view-estadisticas">
+  <div class="admin-shell">
+    <nav class="admin-nav">
+      <div class="brand-name">Panel admin</div>
+      <a href="#/admin">Menú</a>
+      <a href="#" id="openOrdersWindow2">Pedidos ↗</a>
+      <a class="is-active">Estadísticas</a>
+      <button class="navlink" id="logoutBtnStats" style="margin-top:1.4rem">Cerrar sesión</button>
+    </nav>
+    <main class="admin-main">
+      <div class="admin-topbar"><h1 style="margin:0">Estadísticas</h1></div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="value" id="statTodayOrders">0</div><div class="label">Pedidos hoy</div></div>
+        <div class="stat-card"><div class="value" id="statTodayRevenue">₡0</div><div class="label">Ingresos hoy</div></div>
+        <div class="stat-card"><div class="value" id="statWeekOrders">0</div><div class="label">Pedidos últimos 7 días</div></div>
+        <div class="stat-card"><div class="value" id="statAvgTicket">₡0</div><div class="label">Ticket promedio (7 días)</div></div>
+      </div>
+      <div class="chart-card"><h3>Pedidos por día (últimos 7 días)</h3><canvas id="chartDaily" height="90"></canvas></div>
+      <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:1.6rem">
+        <div class="chart-card"><h3>Productos más vendidos (7 días)</h3><canvas id="chartTop" height="140"></canvas></div>
+        <div class="chart-card"><h3>Pedidos por estado (7 días)</h3><canvas id="chartStatus" height="140"></canvas></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modales de administración de producto / almacenamiento (compartidos por la vista admin) -->
+<div class="modal-overlay" id="productModal" style="display:none">
+  <div class="modal-card pizza-frame">
+    <h2 id="productModalTitle">Nuevo producto</h2>
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <div class="field"><label for="pName">Nombre</label><input id="pName" required></div>
+      <div class="field"><label for="pDescription">Descripción</label><textarea id="pDescription"></textarea></div>
+      <div style="display:flex; gap:1rem">
+        <div class="field" style="flex:1"><label for="pPrice">Precio (₡)</label><input id="pPrice" type="number" min="0" step="1" required></div>
+        <div class="field" style="flex:1"><label for="pCategory">Categoría</label><input id="pCategory" required placeholder="Pizzas, Bebidas..."></div>
+      </div>
+      <div class="field"><label>Foto</label>
+        <div style="display:flex; align-items:center; gap:.8rem">
+          <img id="productPhotoPreview" class="thumb" style="width:56px;height:56px">
+          <button type="button" class="btn btn-outline btn-sm" id="pickProductPhotoBtn">Elegir del almacenamiento</button>
+        </div>
+        <input type="hidden" id="pImageUrl">
+      </div>
+      <div class="field"><label style="display:flex; align-items:center; gap:.5em; font-weight:400"><input type="checkbox" id="pActive" style="width:auto" checked> Visible en el menú</label></div>
+      <div style="display:flex; gap:.8rem; margin-top:1.2rem">
+        <button type="button" class="btn btn-outline" id="cancelProductBtn">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="deleteProductBtn" style="display:none">Eliminar</button>
+        <button type="submit" class="btn btn-flame" style="flex:1">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mediaModal" style="display:none">
+  <div class="modal-card pizza-frame">
+    <h2>Almacenamiento de imágenes</h2>
+    <p style="font-size:.85rem; opacity:.7">Elegí una imagen ya subida o subí una nueva. Se reutiliza el mismo almacenamiento para fotos de productos y el logo.</p>
+    <label class="btn btn-outline btn-sm" style="margin-top:.8rem; display:inline-flex">Subir nueva imagen<input type="file" id="uploadInput" accept="image/*" style="display:none"></label>
+    <div class="media-grid" id="mediaGrid"></div>
+    <div style="display:flex; justify-content:flex-end; gap:.8rem"><button class="btn btn-outline" id="closeMediaBtn">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+// =========================================================
+// CONFIGURACIÓN DE SUPABASE — reemplazá estos dos valores
+// Supabase → Project Settings → API → Project URL / anon public key
+// =========================================================
+const SUPABASE_URL = "https://glcnzipfvhufgptrbfsd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsY256aXBmdmh1ZmdwdHJiZnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODg4NzcsImV4cCI6MjEwNTM2NDg3N30.F56TrM3fPlER6kptI6Kgxpd4dwdx-hyO9gySZho54q8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const BUCKET = "imagenes";
+
+// Usuario y contraseña del panel de administración — están acá mismo,
+// no hace falta crear ningún usuario en Supabase.
+// El usuario/contraseña ya NO están escritos acá — viven encriptados en
+// Supabase y se verifican con la función verify_login (ver credenciales.sql).
+let isAdminAuthed = sessionStorage.getItem("pizzaAdminAuthed") === "1";
+let isMasterAuthed = sessionStorage.getItem("pizzaMasterAuthed") === "1";
+
+function publicImageUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+function formatMoney(n) { return new Intl.NumberFormat("es-CR", { style:"currency", currency:"CRC", maximumFractionDigits:0 }).format(n || 0); }
+function formatDateTime(iso) { return new Date(iso).toLocaleString("es-CR", { dateStyle:"short", timeStyle:"short" }); }
+
+// =========================================================
+// HISTORIAL DE PEDIDOS — descargar reporte en PDF con gráficas, y
+// vaciar (mes nuevo). Compartido por el admin normal y el panel maestro.
+// =========================================================
+async function downloadOrdersPDF() {
+  showToast("Generando PDF…");
+  const { data, error } = await sb.from("orders").select("*").order("created_at");
+  if (error) { showToast("Error: " + error.message); return; }
+  const list = data || [];
+  const { data: settingsData } = await sb.from("settings").select("restaurant_name").eq("id", 1).single();
+  const restaurantName = settingsData?.restaurant_name || "Mi Pizzería";
+
+  const totalOrders = list.length;
+  const totalRevenue = list.reduce((s, o) => s + Number(o.total || 0), 0);
+  const distinctClients = new Set(list.map((o) => o.customer_phone)).size;
+  const avgTicket = totalOrders ? totalRevenue / totalOrders : 0;
+
+  const days = [];
+  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+  const dailyCounts = days.map((dk) => list.filter((o) => o.created_at.slice(0, 10) === dk).length);
+
+  const productCounts = {};
+  list.forEach((o) => (o.items || []).forEach((i) => { productCounts[i.name] = (productCounts[i.name] || 0) + i.qty; }));
+  const topEntries = Object.entries(productCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  const statusLabels = ["pendiente", "preparando", "listo", "entregado", "cancelado"];
+  const statusCounts = statusLabels.map((s) => list.filter((o) => o.status === s).length);
+
+  const hiddenBox = document.createElement("div");
+  hiddenBox.style.cssText = "position:fixed; left:-9999px; top:0;";
+  document.body.appendChild(hiddenBox);
+  const makeCanvas = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; hiddenBox.appendChild(c); return c; };
+
+  const dailyCanvas = makeCanvas(700, 260);
+  new Chart(dailyCanvas, {
+    type: "line",
+    data: { labels: days.map((d) => d.slice(5)), datasets: [{ label: "Pedidos", data: dailyCounts, borderColor: "#E50914", backgroundColor: "rgba(229,9,20,.2)", fill: true, tension: .3, pointRadius: 0 }] },
+    options: { animation: false, responsive: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+  const topCanvas = makeCanvas(700, 340);
+  new Chart(topCanvas, {
+    type: "bar",
+    data: { labels: topEntries.map((e) => e[0]), datasets: [{ label: "Unidades", data: topEntries.map((e) => e[1]), backgroundColor: "#F5C518" }] },
+    options: { animation: false, responsive: false, indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+  const statusCanvas = makeCanvas(480, 340);
+  new Chart(statusCanvas, {
+    type: "doughnut",
+    data: { labels: statusLabels, datasets: [{ data: statusCounts, backgroundColor: ["#E8C27A", "#D69A6E", "#8FAE79", "#9AA290", "#C98A80"] }] },
+    options: { animation: false, responsive: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } } }
+  });
+
+  await new Promise((r) => setTimeout(r, 150));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  let y = 46;
+
+  doc.setFontSize(19); doc.setTextColor(20); doc.text(`Reporte de pedidos — ${restaurantName}`, 40, y); y += 20;
+  doc.setFontSize(10); doc.setTextColor(120); doc.text(`Generado el ${new Date().toLocaleString("es-CR")}`, 40, y); y += 26;
+
+  doc.setTextColor(20); doc.setFontSize(12);
+  doc.text(`Pedidos totales: ${totalOrders}`, 40, y);
+  doc.text(`Ingresos totales: ${formatMoney(totalRevenue)}`, 260, y); y += 18;
+  doc.text(`Clientes distintos: ${distinctClients}`, 40, y);
+  doc.text(`Ticket promedio: ${formatMoney(avgTicket)}`, 260, y); y += 26;
+
+  doc.setFontSize(13); doc.text("Pedidos por día (últimos 30 días)", 40, y); y += 10;
+  doc.addImage(dailyCanvas.toDataURL("image/png"), "PNG", 40, y, 500, 186); y += 206;
+
+  doc.setFontSize(13); doc.text("Productos más vendidos", 40, y);
+  doc.text("Pedidos por estado", 340, y); y += 10;
+  doc.addImage(topCanvas.toDataURL("image/png"), "PNG", 40, y, 280, 170);
+  doc.addImage(statusCanvas.toDataURL("image/png"), "PNG", 330, y, 220, 170);
+
+  hiddenBox.remove();
+
+  doc.addPage();
+  doc.setFontSize(14); doc.text("Detalle de pedidos", 40, 40);
+  const rows = list.map((o) => [
+    formatDateTime(o.created_at), o.customer_name, o.customer_phone,
+    (o.items || []).map((i) => `${i.qty}x ${i.name}`).join(", "), formatMoney(o.total), o.status
+  ]);
+  doc.autoTable({
+    startY: 54,
+    head: [["Fecha", "Cliente", "Teléfono", "Productos", "Total", "Estado"]],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [229, 9, 20] },
+    columnStyles: { 3: { cellWidth: 200 } }
+  });
+
+  doc.save(`reporte-pedidos-${new Date().toISOString().slice(0, 10)}.pdf`);
+  showToast(`PDF generado con ${totalOrders} pedidos`);
+}
+
+async function clearAllOrders() {
+  if (!confirm("Esto borra TODOS los pedidos guardados y no se puede deshacer. ¿Ya descargaste el reporte? Tocá Aceptar para borrar igual.")) return;
+  const { error } = await sb.from("orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) { showToast("Error: " + error.message); return; }
+  showToast("Pedidos eliminados, listo para el mes que viene");
+}
+
+const el = (id) => document.getElementById(id);
+
+el("downloadOrdersBtnAdmin")?.addEventListener("click", downloadOrdersPDF);
+el("clearOrdersBtnAdmin")?.addEventListener("click", clearAllOrders);
+el("downloadOrdersBtnMaster")?.addEventListener("click", downloadOrdersPDF);
+el("clearOrdersBtnMaster")?.addEventListener("click", clearAllOrders);
+function showToast(msg) {
+  const t = el("toast");
+  t.textContent = msg;
+  t.classList.add("is-visible");
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove("is-visible"), 5000);
+}
+function baseUrl() { return window.location.href.split("#")[0]; }
+
+// =========================================================
+// ROUTER — todas las vistas viven en este mismo archivo
+// =========================================================
+let pendingRoute = null;
+
+function showView(name) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("is-active"));
+  el("view-" + name).classList.add("is-active");
+}
+
+function router() {
+  const route = (location.hash || "#/").slice(1).replace(/^\//, "") || "";
+  if (route === "" || route === "/") { showView("cliente"); initCliente(); return; }
+
+  if (route === "maestro") {
+    if (!isMasterAuthed) { showView("masterLogin"); return; }
+    showView("master"); initMaster(); return;
+  }
+
+  if (!isAdminAuthed) { pendingRoute = route; showView("login"); return; }
+
+  if (route === "admin") { showView("admin"); initAdmin(); }
+  else if (route === "pedidos") { showView("pedidos"); initPedidos(); }
+  else if (route === "estadisticas") { showView("estadisticas"); initEstadisticas(); }
+  else { showView("cliente"); initCliente(); }
+}
+window.addEventListener("hashchange", router);
+
+// Usuario y contraseña del admin y del maestro — fijos acá en el código.
+// Para cambiarlos, hay que pedir un index.html nuevo y volver a subirlo.
+const ADMIN_USER = "pizza2006";
+const ADMIN_PASS = "12345";
+const MASTER_PASS = "Nil$on2006";
+
+el("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const user = el("loginEmail").value.trim();
+  const pass = el("loginPassword").value.trim();
+  if (user.toLowerCase() === ADMIN_USER.toLowerCase() && pass === ADMIN_PASS) {
+    isAdminAuthed = true;
+    sessionStorage.setItem("pizzaAdminAuthed", "1");
+    el("loginError").style.display = "none";
+    location.hash = "#/" + (pendingRoute || "admin");
+    router();
+  } else {
+    el("loginError").style.display = "block";
+  }
+});
+
+function cerrarSesion() {
+  isAdminAuthed = false;
+  sessionStorage.removeItem("pizzaAdminAuthed");
+  location.hash = "#/";
+}
+el("logoutBtnAdmin").addEventListener("click", cerrarSesion);
+el("logoutBtnPedidos").addEventListener("click", cerrarSesion);
+el("logoutBtnStats").addEventListener("click", cerrarSesion);
+
+el("openOrdersWindow").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/pedidos", "_blank"); });
+el("openOrdersWindow2").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/pedidos", "_blank"); });
+el("openStatsWindow").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/estadisticas", "_blank"); });
+el("openStatsWindow2").addEventListener("click", (e) => { e.preventDefault(); window.open(baseUrl() + "#/estadisticas", "_blank"); });
+
+// =========================================================
+// PANEL MAESTRO — ruta escondida #/maestro, credenciales separadas
+// del admin normal. Sirve para activar/desactivar el sitio y para
+// cambiar la propia clave maestra (nadie más la puede tocar).
+// =========================================================
+el("masterLoginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const pass = el("masterLoginPass").value;
+  if (pass === MASTER_PASS) {
+    isMasterAuthed = true;
+    sessionStorage.setItem("pizzaMasterAuthed", "1");
+    el("masterLoginError").style.display = "none";
+    el("masterLoginForm").reset();
+    router();
+  } else {
+    el("masterLoginError").style.display = "block";
+  }
+});
+
+el("masterLogoutBtn").addEventListener("click", () => {
+  isMasterAuthed = false;
+  sessionStorage.removeItem("pizzaMasterAuthed");
+  location.hash = "#/";
+});
+
+let masterReady = false;
+function initMaster() {
+  loadMasterStatus();
+  loadMasterUsage();
+  if (masterReady) return;
+  masterReady = true;
+  sb.channel("master-settings").on("postgres_changes", { event:"UPDATE", schema:"public", table:"settings" }, loadMasterStatus).subscribe();
+  sb.channel("master-orders").on("postgres_changes", { event:"*", schema:"public", table:"orders" }, loadMasterUsage).subscribe();
+}
+
+async function loadMasterStatus() {
+  const { data } = await sb.from("settings").select("site_active").eq("id", 1).single();
+  const active = data?.site_active !== false;
+  el("masterSiteStatusPill").textContent = active ? "activo" : "inactivo";
+  el("masterSiteStatusPill").className = "status-pill " + (active ? "status-listo" : "status-cancelado");
+  el("deactivateSiteBtn").style.display = active ? "inline-flex" : "none";
+  el("activateSiteBtn").style.display = active ? "none" : "inline-flex";
+}
+
+async function toggleSiteActive(active) {
+  const { error } = await sb.from("settings").update({ site_active: active }).eq("id", 1);
+  if (error) { showToast("Error: " + error.message); return; }
+  showToast(active ? "Sitio activado" : "Sitio desactivado");
+  loadMasterStatus();
+}
+el("deactivateSiteBtn").addEventListener("click", () => toggleSiteActive(false));
+el("activateSiteBtn").addEventListener("click", () => toggleSiteActive(true));
+
+async function loadMasterUsage() {
+  const { data: orders } = await sb.from("orders").select("customer_phone,total,created_at");
+  const list = orders || [];
+  el("masterTotalOrders").textContent = list.length;
+  const distinctPhones = new Set(list.map((o) => o.customer_phone)).size;
+  el("masterTotalClients").textContent = distinctPhones;
+  el("masterTotalRevenue").textContent = formatMoney(list.reduce((s, o) => s + Number(o.total || 0), 0));
+}
+
+// =========================================================
+// VISTA CLIENTE
+// =========================================================
+let clienteProducts = [];
+let cart = {};
+let pendingQty = {};
+let activeCategory = "Todas";
+let watchedOrderId = localStorage.getItem("pizzaLastOrderId") || null;
+let clienteReady = false;
+
+function initCliente() {
+  if (watchedOrderId) { el("trackOrderBtn").style.display = "inline-flex"; }
+  if (clienteReady) return;
+  clienteReady = true;
+  loadClienteSettings();
+  loadClienteProducts();
+
+  sb.channel("cliente-pedidos").on("postgres_changes", { event:"UPDATE", schema:"public", table:"orders" }, (payload) => {
+    if (payload.new.id === watchedOrderId) {
+      el("confirmStatusPill").textContent = payload.new.status;
+      el("confirmStatusPill").className = `status-pill status-${payload.new.status}`;
+    }
+  }).subscribe();
+
+  sb.channel("cliente-menu")
+    .on("postgres_changes", { event:"*", schema:"public", table:"products" }, loadClienteProducts)
+    .on("postgres_changes", { event:"*", schema:"public", table:"settings" }, loadClienteSettings)
+    .subscribe();
+}
+
+async function showOrderStatus(id, isNew) {
+  watchedOrderId = id;
+  localStorage.setItem("pizzaLastOrderId", id);
+  el("trackOrderBtn").style.display = "inline-flex";
+  el("confirmModalTitle").textContent = isNew ? "¡Pedido recibido!" : "Tu pedido";
+  const { data } = await sb.from("orders").select("status").eq("id", id).single();
+  const status = data?.status || "pendiente";
+  el("confirmStatusPill").textContent = status;
+  el("confirmStatusPill").className = `status-pill status-${status}`;
+  el("confirmModal").style.display = "flex";
+}
+el("trackOrderBtn").addEventListener("click", () => showOrderStatus(watchedOrderId, false));
+el("stopTrackingBtn").addEventListener("click", () => {
+  watchedOrderId = null;
+  localStorage.removeItem("pizzaLastOrderId");
+  el("trackOrderBtn").style.display = "none";
+  el("confirmModal").style.display = "none";
+});
+
+async function loadClienteSettings() {
+  const { data } = await sb.from("settings").select("*").eq("id", 1).single();
+  if (!data) return;
+  el("brandName").textContent = data.restaurant_name || "Mi Pizzería";
+  document.title = data.restaurant_name || "Pizzería";
+  if (data.logo_url) { el("brandLogo").src = publicImageUrl(data.logo_url); el("brandLogo").style.display = "block"; }
+  el("siteInactiveOverlay").style.display = data.site_active === false ? "flex" : "none";
+}
+
+async function loadClienteProducts() {
+  const { data, error } = await sb.from("products").select("*").eq("active", true).order("sort_order");
+  if (error) { showToast("No se pudo cargar el menú"); return; }
+  clienteProducts = data || [];
+  renderCategories();
+  renderMenu();
+}
+
+function renderCategories() {
+  const cats = ["Todas", ...new Set(clienteProducts.map(p => p.category))];
+  el("categoryBar").innerHTML = cats.map(c => `<button class="category-pill ${c === activeCategory ? "is-active" : ""}" data-cat="${c}">${c}</button>`).join("");
+  el("categoryBar").querySelectorAll(".category-pill").forEach(btn => btn.addEventListener("click", () => { activeCategory = btn.dataset.cat; renderCategories(); renderMenu(); }));
+}
+
+function renderMenu() {
+  const list = activeCategory === "Todas" ? clienteProducts : clienteProducts.filter(p => p.category === activeCategory);
+  if (list.length === 0) { el("menuContainer").innerHTML = `<p class="empty-state">Todavía no hay productos en esta categoría.</p>`; return; }
+  const byCat = {};
+  list.forEach(p => { (byCat[p.category] ||= []).push(p); });
+  el("menuContainer").innerHTML = Object.entries(byCat).map(([cat, items]) => `
+    <h2>${cat}</h2>
+    <div class="product-grid" style="margin-bottom:2.4rem">
+      ${items.map(p => `
+        <div class="product-card">
+          <div class="product-photo" style="background-image:url('${p.image_url ? publicImageUrl(p.image_url) : ""}')"></div>
+          <div class="product-body">
+            <h3>${p.name}</h3><p class="product-desc">${p.description || ""}</p>
+            <div class="product-footer">
+              <span class="price">${formatMoney(p.price)}</span>
+              <div style="display:flex; align-items:center; gap:.5rem; flex-wrap:wrap">
+                <div class="qty-control">
+                  <button type="button" data-qty-minus="${p.id}">−</button>
+                  <span data-qty-value="${p.id}">1</span>
+                  <button type="button" data-qty-plus="${p.id}">+</button>
+                </div>
+                <button class="btn btn-flame btn-sm" data-add="${p.id}">Agregar</button>
+              </div>
+            </div>
+          </div>
+        </div>`).join("")}
+    </div>`).join("");
+  el("menuContainer").querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => addToCart(btn.dataset.add)));
+  el("menuContainer").querySelectorAll("[data-qty-plus]").forEach(btn => btn.addEventListener("click", () => changePendingQty(btn.dataset.qtyPlus, 1)));
+  el("menuContainer").querySelectorAll("[data-qty-minus]").forEach(btn => btn.addEventListener("click", () => changePendingQty(btn.dataset.qtyMinus, -1)));
+}
+
+function changePendingQty(id, delta) {
+  const next = Math.max(1, (pendingQty[id] || 1) + delta);
+  pendingQty[id] = next;
+  const span = document.querySelector(`[data-qty-value="${id}"]`);
+  if (span) span.textContent = next;
+}
+
+function addToCart(id) {
+  const product = clienteProducts.find(p => p.id === id);
+  if (!product) return;
+  const qty = pendingQty[id] || 1;
+  if (!cart[id]) cart[id] = { product, qty:0 };
+  cart[id].qty += qty;
+  pendingQty[id] = 1;
+  const span = document.querySelector(`[data-qty-value="${id}"]`);
+  if (span) span.textContent = "1";
+  renderCart();
+  showToast(qty > 1 ? `${qty} × ${product.name} agregadas` : `${product.name} agregada`);
+}
+function changeQty(id, delta) { if (!cart[id]) return; cart[id].qty += delta; if (cart[id].qty <= 0) delete cart[id]; renderCart(); }
+function cartTotal() { return Object.values(cart).reduce((sum,l) => sum + l.qty * Number(l.product.price), 0); }
+
+function renderCart() {
+  const lines = Object.entries(cart);
+  el("cartCount").textContent = lines.reduce((n,[,l]) => n + l.qty, 0);
+  el("goCheckoutBtn").disabled = lines.length === 0;
+  el("cartTotal").textContent = formatMoney(cartTotal());
+  el("cartItems").innerHTML = lines.length === 0 ? `<p class="empty-state">Todavía no agregaste nada del menú.</p>` : lines.map(([id,l]) => `
+    <div class="cart-line"><span class="cart-line-name">${l.product.name}</span>
+      <div class="qty-control"><button data-minus="${id}">−</button><span>${l.qty}</span><button data-plus="${id}">+</button></div>
+      <span>${formatMoney(l.qty * l.product.price)}</span></div>`).join("");
+  el("cartItems").querySelectorAll("[data-plus]").forEach(b => b.addEventListener("click", () => changeQty(b.dataset.plus, 1)));
+  el("cartItems").querySelectorAll("[data-minus]").forEach(b => b.addEventListener("click", () => changeQty(b.dataset.minus, -1)));
+}
+
+function toggleCart(open) { el("cartOverlay").classList.toggle("is-open", open); el("cartDrawer").classList.toggle("is-open", open); }
+el("openCartBtn").addEventListener("click", () => toggleCart(true));
+el("closeCartBtn").addEventListener("click", () => toggleCart(false));
+el("cartOverlay").addEventListener("click", () => toggleCart(false));
+el("goCheckoutBtn").addEventListener("click", () => { toggleCart(false); el("checkoutModal").style.display = "flex"; });
+el("cancelCheckoutBtn").addEventListener("click", () => el("checkoutModal").style.display = "none");
+
+el("checkoutForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const submitBtn = el("submitOrderBtn");
+  submitBtn.disabled = true; submitBtn.textContent = "Enviando...";
+  const items = Object.values(cart).map(l => ({ product_id:l.product.id, name:l.product.name, price:Number(l.product.price), qty:l.qty }));
+  const { data, error } = await sb.from("orders").insert({
+    customer_name: el("custName").value, customer_phone: el("custPhone").value,
+    customer_address: el("custAddress").value, notes: el("custNotes").value,
+    items, total: cartTotal(), status: "pendiente"
+  }).select().single();
+  submitBtn.disabled = false; submitBtn.textContent = "Enviar pedido";
+  if (error) { showToast("No se pudo enviar el pedido: " + error.message); return; }
+  cart = {}; renderCart();
+  el("checkoutForm").reset(); el("checkoutModal").style.display = "none";
+  showOrderStatus(data.id, true);
+});
+el("closeConfirmBtn").addEventListener("click", () => { el("confirmModal").style.display = "none"; });
+
+// =========================================================
+// VISTA ADMIN — MENÚ
+// =========================================================
+let adminProducts = [];
+let mediaTarget = null;
+let adminReady = false;
+
+function initAdmin() {
+  if (el("configWarning")) {
+    if (SUPABASE_URL.includes("TU-PROYECTO") || SUPABASE_ANON_KEY.includes("TU-ANON-KEY")) {
+      el("configWarning").style.display = "block";
+      el("configWarning").textContent = "⚠️ Todavía no reemplazaste SUPABASE_URL y SUPABASE_ANON_KEY en el código (arriba del todo, dentro del <script>). Hasta que pongas los datos reales de tu proyecto, nada se va a poder guardar.";
+    } else {
+      el("configWarning").style.display = "none";
+    }
+  }
+  if (adminReady) return;
+  adminReady = true;
+  loadAdminSettings();
+  loadAdminProducts();
+  sb.channel("admin-productos").on("postgres_changes", { event:"*", schema:"public", table:"products" }, loadAdminProducts).subscribe();
+}
+
+async function loadAdminSettings() {
+  const { data } = await sb.from("settings").select("*").eq("id", 1).single();
+  if (!data) return;
+  el("restaurantName").value = data.restaurant_name || "";
+  el("logoPreview").src = data.logo_url ? publicImageUrl(data.logo_url) : "";
+  el("logoPreview").dataset.path = data.logo_url || "";
+}
+
+el("settingsForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { error } = await sb.from("settings").update({
+    restaurant_name: el("restaurantName").value, logo_url: el("logoPreview").dataset.path || null, updated_at: new Date().toISOString()
+  }).eq("id", 1);
+  showToast(error ? "No se pudo guardar" : "Datos guardados");
+});
+el("pickLogoBtn").addEventListener("click", () => openMedia("logo"));
+
+async function loadAdminProducts() {
+  const { data, error } = await sb.from("products").select("*").order("sort_order").order("created_at");
+  if (error) { showToast("No se pudo cargar el menú"); return; }
+  adminProducts = data || [];
+  renderAdminProducts();
+}
+
+function renderAdminProducts() {
+  if (adminProducts.length === 0) { el("productsTbody").innerHTML = `<tr><td colspan="6" class="empty-state">Todavía no agregaste productos.</td></tr>`; return; }
+  el("productsTbody").innerHTML = adminProducts.map(p => `
+    <tr><td><img class="thumb" src="${p.image_url ? publicImageUrl(p.image_url) : ""}"></td><td>${p.name}</td><td>${p.category}</td><td>${formatMoney(p.price)}</td><td>${p.active ? "Sí" : "No"}</td>
+    <td><button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button></td></tr>`).join("");
+  el("productsTbody").querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openProductModal(adminProducts.find(p => p.id === b.dataset.edit))));
+}
+
+function openProductModal(product) {
+  el("productModalTitle").textContent = product ? "Editar producto" : "Nuevo producto";
+  el("productId").value = product?.id || "";
+  el("pName").value = product?.name || "";
+  el("pDescription").value = product?.description || "";
+  el("pPrice").value = product?.price || "";
+  el("pCategory").value = product?.category || "";
+  el("pActive").checked = product ? product.active : true;
+  el("pImageUrl").value = product?.image_url || "";
+  el("productPhotoPreview").src = product?.image_url ? publicImageUrl(product.image_url) : "";
+  el("productPhotoPreview").dataset.path = product?.image_url || "";
+  el("deleteProductBtn").style.display = product ? "inline-flex" : "none";
+  el("productModal").style.display = "flex";
+}
+el("newProductBtn").addEventListener("click", () => openProductModal(null));
+el("cancelProductBtn").addEventListener("click", () => el("productModal").style.display = "none");
+el("pickProductPhotoBtn").addEventListener("click", () => openMedia("product"));
+
+el("productForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: el("pName").value, description: el("pDescription").value, price: Number(el("pPrice").value),
+    category: el("pCategory").value, active: el("pActive").checked,
+    image_url: el("productPhotoPreview").dataset.path || null, updated_at: new Date().toISOString()
+  };
+  const id = el("productId").value;
+  const { error } = id ? await sb.from("products").update(payload).eq("id", id) : await sb.from("products").insert(payload);
+  if (error) { showToast("Error al guardar: " + error.message); console.error(error); return; }
+  showToast("Producto guardado"); el("productModal").style.display = "none";
+});
+el("deleteProductBtn").addEventListener("click", async () => {
+  const id = el("productId").value;
+  if (!id || !confirm("¿Eliminar este producto del menú?")) return;
+  const { error } = await sb.from("products").delete().eq("id", id);
+  if (error) { showToast("Error al eliminar: " + error.message); console.error(error); return; }
+  showToast("Producto eliminado"); el("productModal").style.display = "none";
+});
+
+async function openMedia(target) { mediaTarget = target; el("mediaModal").style.display = "flex"; await refreshMediaGrid(); }
+el("closeMediaBtn").addEventListener("click", () => el("mediaModal").style.display = "none");
+
+async function refreshMediaGrid() {
+  const { data, error } = await sb.storage.from(BUCKET).list("", { sortBy: { column:"created_at", order:"desc" } });
+  if (error) { el("mediaGrid").innerHTML = `<p class="empty-state">No se pudo leer el almacenamiento. Revisá que el bucket "imagenes" exista.</p>`; return; }
+  const files = (data || []).filter(f => f.name && !f.name.startsWith("."));
+  el("mediaGrid").innerHTML = files.map(f => `<img src="${publicImageUrl(f.name)}" data-path="${f.name}" alt="${f.name}">`).join("") || `<p class="empty-state">Todavía no hay imágenes subidas.</p>`;
+  el("mediaGrid").querySelectorAll("img").forEach(img => img.addEventListener("click", () => selectMediaImage(img.dataset.path)));
+}
+function selectMediaImage(path) {
+  if (mediaTarget === "logo") { el("logoPreview").src = publicImageUrl(path); el("logoPreview").dataset.path = path; }
+  else { el("productPhotoPreview").src = publicImageUrl(path); el("productPhotoPreview").dataset.path = path; }
+  el("mediaModal").style.display = "none";
+}
+el("uploadInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+  const { error } = await sb.storage.from(BUCKET).upload(path, file, { cacheControl:"3600", upsert:false });
+  if (error) { showToast("Error al subir: " + error.message); console.error(error); return; }
+  showToast("Imagen subida"); await refreshMediaGrid(); selectMediaImage(path); e.target.value = "";
+});
+
+// =========================================================
+// VISTA PEDIDOS
+// =========================================================
+const STATUSES = [
+  { key:"pendiente", label:"Pendiente", next:"preparando" },
+  { key:"preparando", label:"Preparando", next:"listo" },
+  { key:"listo", label:"Listo / en camino", next:"entregado" },
+  { key:"entregado", label:"Entregado", next:null },
+];
+let kanbanOrders = [];
+let newOrderIds = new Set();
+let pedidosReady = false;
+let pedidosRestaurantName = "Nuestra pizzería";
+
+function initPedidos() {
+  loadKanbanOrders();
+  if (pedidosReady) return;
+  pedidosReady = true;
+  sb.from("settings").select("restaurant_name").eq("id", 1).single().then(({ data }) => {
+    if (data?.restaurant_name) pedidosRestaurantName = data.restaurant_name;
+  });
+  sb.channel("admin-pedidos")
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"orders" }, (payload) => { newOrderIds.add(payload.new.id); loadKanbanOrders(); showToast("Nuevo pedido de " + payload.new.customer_name); })
+    .on("postgres_changes", { event:"UPDATE", schema:"public", table:"orders" }, loadKanbanOrders)
+    .on("postgres_changes", { event:"DELETE", schema:"public", table:"orders" }, loadKanbanOrders)
+    .subscribe();
+}
+
+async function loadKanbanOrders() {
+  const since = new Date(Date.now() - 1000*60*60*48).toISOString();
+  // Orden por llegada: quien pidió primero aparece primero.
+  const { data, error } = await sb.from("orders").select("*").gte("created_at", since).order("created_at", { ascending:true });
+  if (error) { showToast("No se pudieron cargar los pedidos"); return; }
+  kanbanOrders = data || [];
+  renderKanban();
+}
+
+function renderKanban() {
+  el("lastUpdate").textContent = "Actualizado " + new Date().toLocaleTimeString("es-CR");
+  el("kanban").innerHTML = STATUSES.map(col => {
+    const items = kanbanOrders.filter(o => o.status === col.key);
+    return `<div class="kanban-col"><h3>${col.label} (${items.length})</h3>${items.map(o => renderOrderCard(o, col.next)).join("") || `<p class="empty-state">Sin pedidos</p>`}</div>`;
+  }).join("");
+  el("kanban").querySelectorAll("[data-advance]").forEach(btn => btn.addEventListener("click", () => updateOrderStatus(btn.dataset.advance, btn.dataset.nextStatus)));
+  el("kanban").querySelectorAll("[data-cancel]").forEach(btn => btn.addEventListener("click", () => updateOrderStatus(btn.dataset.cancel, "cancelado")));
+  newOrderIds.clear();
+}
+
+function whatsappReceiptLink(o) {
+  let digits = String(o.customer_phone || "").replace(/\D/g, "");
+  if (digits.length === 8) digits = "506" + digits; // número local de Costa Rica sin código de país
+  const itemsText = (o.items || []).map(i => `${i.qty} x ${i.name}`).join("\n");
+  const message = `🍕 *${pedidosRestaurantName}*\n\n¡Hola ${o.customer_name}! Tu pedido ya está entregado ✅\n\n*Comprobante de tu pedido*\nFecha: ${formatDateTime(o.created_at)}\n${itemsText}\n\n*Total: ${formatMoney(o.total)}*\n\n¡Gracias por tu compra! 🙌`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+
+function renderOrderCard(o, nextStatus) {
+  const itemsHtml = (o.items || []).map(i => `<li>${i.qty} × ${i.name}</li>`).join("");
+  const isNew = newOrderIds.has(o.id);
+  return `<div class="order-card ${isNew ? "is-new" : ""}">
+    <strong>${o.customer_name}</strong> · ${o.customer_phone}<br><span style="opacity:.6">${formatDateTime(o.created_at)}</span>
+    <ul class="order-items-list">${itemsHtml}</ul>
+    ${o.customer_address ? `<div style="opacity:.75">📍 ${o.customer_address}</div>` : ""}
+    ${o.notes ? `<div style="opacity:.75">📝 ${o.notes}</div>` : ""}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; flex-wrap:wrap; gap:.4rem">
+      <strong>${formatMoney(o.total)}</strong>
+      <div style="display:flex; gap:.4rem; flex-wrap:wrap">
+        ${o.status !== "cancelado" && o.status !== "entregado" ? `<button class="btn btn-ghost btn-sm" data-cancel="${o.id}">Cancelar</button>` : ""}
+        ${o.status === "entregado" ? `<a class="btn btn-flame btn-sm" href="${whatsappReceiptLink(o)}" target="_blank" rel="noopener">📲 Enviar comprobante</a>` : ""}
+        ${nextStatus ? `<button class="btn btn-flame btn-sm" data-advance="${o.id}" data-next-status="${nextStatus}">Avanzar</button>` : ""}
+      </div>
+    </div></div>`;
+}
+async function updateOrderStatus(id, status) {
+  const { error } = await sb.from("orders").update({ status }).eq("id", id);
+  if (error) showToast("No se pudo actualizar el pedido");
+}
+
+// =========================================================
+// VISTA ESTADÍSTICAS
+// =========================================================
+let chartDailyInst, chartTopInst, chartStatusInst;
+
+function dayKey(d) { return d.toISOString().slice(0,10); }
+function startOfToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+
+function initEstadisticas() { loadStats(); }
+
+async function loadStats() {
+  const since = new Date(Date.now() - 1000*60*60*24*7).toISOString();
+  const { data: statsOrders, error } = await sb.from("orders").select("*").gte("created_at", since);
+  if (error || !statsOrders) return;
+
+  const today = startOfToday();
+  const todayOrders = statsOrders.filter(o => new Date(o.created_at) >= today);
+  el("statTodayOrders").textContent = todayOrders.length;
+  el("statTodayRevenue").textContent = formatMoney(todayOrders.reduce((s,o) => s + Number(o.total), 0));
+  el("statWeekOrders").textContent = statsOrders.length;
+  el("statAvgTicket").textContent = formatMoney(statsOrders.length ? statsOrders.reduce((s,o) => s + Number(o.total), 0) / statsOrders.length : 0);
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(dayKey(d)); }
+  const dailyCounts = days.map(dk => statsOrders.filter(o => o.created_at.slice(0,10) === dk).length);
+
+  if (chartDailyInst) chartDailyInst.destroy();
+  chartDailyInst = new Chart(el("chartDaily"), {
+    type:"line",
+    data:{ labels: days.map(d => d.slice(5)), datasets:[{ label:"Pedidos", data:dailyCounts, borderColor:"#C1440E", backgroundColor:"rgba(193,68,14,.15)", fill:true, tension:.3 }] },
+    options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  const productCounts = {};
+  statsOrders.forEach(o => (o.items || []).forEach(i => { productCounts[i.name] = (productCounts[i.name] || 0) + i.qty; }));
+  const topEntries = Object.entries(productCounts).sort((a,b) => b[1]-a[1]).slice(0,8);
+
+  if (chartTopInst) chartTopInst.destroy();
+  chartTopInst = new Chart(el("chartTop"), {
+    type:"bar",
+    data:{ labels: topEntries.map(e => e[0]), datasets:[{ label:"Unidades vendidas", data: topEntries.map(e => e[1]), backgroundColor:"#E3A23C" }] },
+    options:{ indexAxis:"y", plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  const statusLabels = ["pendiente","preparando","listo","entregado","cancelado"];
+  const statusCounts = statusLabels.map(s => statsOrders.filter(o => o.status === s).length);
+
+  if (chartStatusInst) chartStatusInst.destroy();
+  chartStatusInst = new Chart(el("chartStatus"), {
+    type:"doughnut",
+    data:{ labels: statusLabels, datasets:[{ data: statusCounts, backgroundColor:["#E8C27A","#D69A6E","#8FAE79","#9AA290","#C98A80"] }] },
+    options:{ plugins:{ legend:{ position:"bottom" } } }
+  });
+}
+
+// Arranque
+router();
+</script>
+</body>
+</html>
