@@ -281,14 +281,14 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
         <button type="button" class="btn btn-flame btn-sm" id="activateSiteBtn" style="display:none">Activar sitio</button>
       </div>
 
-      <details style="text-align:left; margin-top:1rem">
-        <summary style="cursor:pointer; font-weight:600">Cambiar usuario/contraseña maestra</summary>
-        <form id="masterChangeForm" style="margin-top:1rem">
-          <div class="field"><label for="masterNewUser">Nuevo usuario</label><input id="masterNewUser" required></div>
-          <div class="field"><label for="masterNewPass">Nueva contraseña</label><input id="masterNewPass" type="password" required minlength="6"></div>
-          <button class="btn btn-outline btn-sm" type="submit">Guardar</button>
-        </form>
-      </details>
+      <div style="background:var(--charcoal); border-radius:var(--radius); padding:1rem; margin:1.2rem 0; text-align:left">
+        <p style="margin:0 0 .6rem; font-weight:600">Uso del sitio (histórico)</p>
+        <p style="margin:.2rem 0">Pedidos totales: <strong id="masterTotalOrders">0</strong></p>
+        <p style="margin:.2rem 0">Clientes distintos: <strong id="masterTotalClients">0</strong></p>
+        <p style="margin:.2rem 0">Ingresos totales: <strong id="masterTotalRevenue">₡0</strong></p>
+      </div>
+
+      <p style="font-size:.8rem; opacity:.6; margin-top:1rem">Usuario y contraseña maestra fijos en el código. Para cambiarlos, pedí un index.html nuevo.</p>
 
       <p style="margin-top:1.4rem"><button type="button" class="btn-ghost" id="masterLogoutBtn">Cerrar sesión maestra</button></p>
     </div>
@@ -321,18 +321,6 @@ h1,h2,h3 { font-family: var(--font-display); margin:0 0 .3em; font-weight:600; }
             </div>
           </div>
           <button class="btn btn-flame" type="submit">Guardar</button>
-        </form>
-      </section>
-
-      <section style="margin-bottom:2.6rem; background:var(--cream-2); border-radius:var(--radius); padding:1.4rem 1.6rem">
-        <h2 style="font-size:1.1rem">Seguridad</h2>
-        <p style="font-size:.85rem; opacity:.7; margin-top:-.4rem">Cambiá tu usuario y contraseña de acceso al panel.</p>
-        <form id="changePasswordForm" style="display:flex; gap:1.2rem; flex-wrap:wrap; align-items:flex-end; margin-top:1rem">
-          <div class="field"><label for="cpOldUser">Usuario actual</label><input id="cpOldUser" required></div>
-          <div class="field"><label for="cpOldPass">Contraseña actual</label><input id="cpOldPass" type="password" required></div>
-          <div class="field"><label for="cpNewUser">Nuevo usuario</label><input id="cpNewUser" required></div>
-          <div class="field"><label for="cpNewPass">Nueva contraseña</label><input id="cpNewPass" type="password" required minlength="6"></div>
-          <button class="btn btn-flame" type="submit">Cambiar</button>
         </form>
       </section>
 
@@ -497,16 +485,18 @@ function router() {
 }
 window.addEventListener("hashchange", router);
 
-el("loginForm").addEventListener("submit", async (e) => {
+// Usuario y contraseña del admin y del maestro — fijos acá en el código.
+// Para cambiarlos, hay que pedir un index.html nuevo y volver a subirlo.
+const ADMIN_USER = "pizza2006";
+const ADMIN_PASS = "12345";
+const MASTER_USER = "Bismarck";
+const MASTER_PASS = "Nil$on2006";
+
+el("loginForm").addEventListener("submit", (e) => {
   e.preventDefault();
-  const btn = el("loginForm").querySelector("button[type=submit]");
-  btn.disabled = true;
   const user = el("loginEmail").value.trim();
   const pass = el("loginPassword").value.trim();
-  const { data: ok, error } = await sb.rpc("verify_login", { p_role: "admin", p_username: user, p_password: pass });
-  btn.disabled = false;
-  if (error) { showToast("Error al verificar: " + error.message); return; }
-  if (ok) {
+  if (user.toLowerCase() === ADMIN_USER.toLowerCase() && pass === ADMIN_PASS) {
     isAdminAuthed = true;
     sessionStorage.setItem("pizzaAdminAuthed", "1");
     el("loginError").style.display = "none";
@@ -540,12 +530,11 @@ el("masterLoginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const user = el("masterLoginUser").value.trim();
   const pass = el("masterLoginPass").value;
-  const { data: ok, error } = await sb.rpc("verify_login", { p_role: "master", p_username: user, p_password: pass });
-  if (error) { showToast("Error: " + error.message); return; }
-  if (ok) {
+  if (user.toLowerCase() === MASTER_USER.toLowerCase() && pass === MASTER_PASS) {
     isMasterAuthed = true;
     sessionStorage.setItem("pizzaMasterAuthed", "1");
     el("masterLoginError").style.display = "none";
+    el("masterLoginForm").reset();
     router();
   } else {
     el("masterLoginError").style.display = "block";
@@ -561,9 +550,11 @@ el("masterLogoutBtn").addEventListener("click", () => {
 let masterReady = false;
 function initMaster() {
   loadMasterStatus();
+  loadMasterUsage();
   if (masterReady) return;
   masterReady = true;
   sb.channel("master-settings").on("postgres_changes", { event:"UPDATE", schema:"public", table:"settings" }, loadMasterStatus).subscribe();
+  sb.channel("master-orders").on("postgres_changes", { event:"*", schema:"public", table:"orders" }, loadMasterUsage).subscribe();
 }
 
 async function loadMasterStatus() {
@@ -576,36 +567,22 @@ async function loadMasterStatus() {
 }
 
 async function toggleSiteActive(active) {
-  const masterUser = el("masterLoginUser").value.trim();
-  const masterPass = el("masterLoginPass").value;
-  // Si ya se cerró el formulario de login (sesión ya iniciada en este navegador),
-  // le volvemos a pedir la contraseña maestra acá mismo para confirmar la acción.
-  const confirmUser = masterUser || prompt("Confirmá tu usuario maestro:");
-  const confirmPass = masterPass || prompt("Confirmá tu contraseña maestra:");
-  if (!confirmUser || !confirmPass) return;
-  const { data: ok, error } = await sb.rpc("set_site_active", { p_username: confirmUser, p_password: confirmPass, p_active: active });
+  const { error } = await sb.from("settings").update({ site_active: active }).eq("id", 1);
   if (error) { showToast("Error: " + error.message); return; }
-  if (!ok) { showToast("Contraseña maestra incorrecta"); return; }
   showToast(active ? "Sitio activado" : "Sitio desactivado");
   loadMasterStatus();
 }
 el("deactivateSiteBtn").addEventListener("click", () => toggleSiteActive(false));
 el("activateSiteBtn").addEventListener("click", () => toggleSiteActive(true));
 
-el("masterChangeForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const oldUser = el("masterLoginUser").value.trim() || prompt("Tu usuario maestro actual:");
-  const oldPass = el("masterLoginPass").value || prompt("Tu contraseña maestra actual:");
-  if (!oldUser || !oldPass) return;
-  const { data: ok, error } = await sb.rpc("change_credentials", {
-    p_role: "master", p_old_username: oldUser, p_old_password: oldPass,
-    p_new_username: el("masterNewUser").value.trim(), p_new_password: el("masterNewPass").value
-  });
-  if (error) { showToast("Error: " + error.message); return; }
-  if (!ok) { showToast("Usuario o contraseña actual incorrectos"); return; }
-  showToast("Clave maestra actualizada");
-  el("masterChangeForm").reset();
-});
+async function loadMasterUsage() {
+  const { data: orders } = await sb.from("orders").select("customer_phone,total,created_at");
+  const list = orders || [];
+  el("masterTotalOrders").textContent = list.length;
+  const distinctPhones = new Set(list.map((o) => o.customer_phone)).size;
+  el("masterTotalClients").textContent = distinctPhones;
+  el("masterTotalRevenue").textContent = formatMoney(list.reduce((s, o) => s + Number(o.total || 0), 0));
+}
 
 // =========================================================
 // VISTA CLIENTE
@@ -810,21 +787,6 @@ el("settingsForm").addEventListener("submit", async (e) => {
   showToast(error ? "No se pudo guardar" : "Datos guardados");
 });
 el("pickLogoBtn").addEventListener("click", () => openMedia("logo"));
-
-el("changePasswordForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const { data: ok, error } = await sb.rpc("change_credentials", {
-    p_role: "admin",
-    p_old_username: el("cpOldUser").value.trim(),
-    p_old_password: el("cpOldPass").value,
-    p_new_username: el("cpNewUser").value.trim(),
-    p_new_password: el("cpNewPass").value
-  });
-  if (error) { showToast("Error: " + error.message); return; }
-  if (!ok) { showToast("Usuario o contraseña actual incorrectos"); return; }
-  showToast("Listo, usá los nuevos datos la próxima vez que entres");
-  el("changePasswordForm").reset();
-});
 
 async function loadAdminProducts() {
   const { data, error } = await sb.from("products").select("*").order("sort_order").order("created_at");
